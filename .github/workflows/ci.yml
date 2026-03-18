@@ -1,0 +1,71 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+
+      - name: Install gems
+        run: bundle install
+
+      - name: Setup DB
+        env:
+          RAILS_ENV: test
+          PGUSER: postgres
+          PGPASSWORD: password
+        run: bundle exec rails db:create db:migrate
+
+      - name: Run tests
+        run: bundle exec rspec
+
+      - name: Run Rubocop
+        run: bundle exec rubocop
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install deps
+        run: npm install
+
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      - name: Run lint
+        run: npm run lint
