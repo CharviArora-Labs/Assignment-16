@@ -17,6 +17,11 @@ jobs:
           POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     defaults:
       run:
@@ -32,6 +37,19 @@ jobs:
 
       - name: Install gems
         run: bundle install
+
+      - name: Wait for PostgreSQL
+        uses: ikalnytskyi/action-wait-for-host@v1
+        with:
+          host: 127.0.0.1
+          port: 5432
+
+      - name: Check PostgreSQL connection
+        run: |
+          echo "Testing PostgreSQL connection..."
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -c '\l' || echo "Connection failed"
+          echo "PostgreSQL version:"
+          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -c 'SELECT version();'
 
       - name: Setup DB
         env:
