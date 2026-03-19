@@ -34,22 +34,18 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.2
+          bundler-cache: false
 
       - name: Install gems
         run: bundle install
 
-      - name: Wait for PostgreSQL
-        uses: ikalnytskyi/action-wait-for-host@v1
-        with:
-          host: 127.0.0.1
-          port: 5432
-
-      - name: Check PostgreSQL connection
+      - name: Wait for PostgreSQL to be ready
         run: |
-          echo "Testing PostgreSQL connection..."
-          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -c '\l' || echo "Connection failed"
-          echo "PostgreSQL version:"
-          PGPASSWORD=password psql -h 127.0.0.1 -U postgres -c 'SELECT version();'
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 && break || echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+          pg_isready -h localhost -p 5432
 
       - name: Setup DB
         env:
