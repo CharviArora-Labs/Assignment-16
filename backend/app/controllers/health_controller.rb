@@ -4,5 +4,3 @@ class HealthController < ApplicationController
     render json: { status: "ok" }
   end
 end
-
-
